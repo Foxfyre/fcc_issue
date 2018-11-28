@@ -20,6 +20,8 @@ MongoClient.connect(CONNECTION_STRING, (err, db) => {
 });
 
   module.exports = function (app) {
+    
+    
     app.route('/api/issues/:project')
       .get(function (req, res){
         const project = req.params.project;
@@ -28,14 +30,14 @@ MongoClient.connect(CONNECTION_STRING, (err, db) => {
         query.project = project;
       
         if (query._id) query._id = new ObjectId(query._id);
-        if (query.open) query.open = String(query.open) == "true";
+        if (query.open) query.open = Boolean(query.open);
       
         
         MongoClient.connect(process.env.DATABASE, (err, db) => {
           const collection = db.collection("issues");
           
           collection.find(query).toArray((err, result) => {
-            res.json(result); 
+            res.json(result);
           })
           
         })
@@ -88,7 +90,7 @@ MongoClient.connect(CONNECTION_STRING, (err, db) => {
             }
           }
 
-          noChange ? res.send("no updates") : modified.updated_on = new Date();
+          noChange ? console.log("no updates") : modified.updated_on = new Date();
 
           MongoClient.connect(process.env.DATABASE, (err, db) => {
             const collection = db.collection("issues");
