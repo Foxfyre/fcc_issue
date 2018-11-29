@@ -31,21 +31,26 @@ suite('Functional Tests', function() {
         })
         .end(function(err, res){
           assert.equal(res.status, 200);
-          assert.property(res.body, "issue_title");
-          assert.property(res.body, "issue_text");
-          assert.property(res.body, "created_on");
-          assert.property(res.body, "updated_on");
-          assert.property(res.body, "created_by");
-          assert.property(res.body, "assigned_to");
-          assert.property(res.body, "status_text");
-          assert.property(res.body, "_id");
-          assert.equal(res.body.issue_title, "Title");
-          assert.equal(res.body.issue_text, "text");
-          assert.equal(res.body.created_by, "Functional Test - Every field filled in");
-          assert.equal(res.body.assigned_to, "Chai and Mocha");
-          assert.equal(res.body.status_text, "In QA");
+          assert.property(res.body, 'issue_title');
+          assert.property(res.body, 'issue_text');
+          assert.property(res.body, 'created_on');
+          assert.property(res.body, 'updated_on');
+          assert.property(res.body, 'created_by');
+          assert.property(res.body, 'assigned_to');
+          assert.property(res.body, 'open');
+          assert.property(res.body, 'status_text');
+          assert.property(res.body, '_id');
+          id = res.body._id;
+          assert.equal(res.body.issue_title, 'Title');
+          assert.equal(res.body.issue_text, 'text');
+          assert.equal(res.body.created_by, 'Functional Test - Every field filled in');
+          assert.equal(res.body.assigned_to, 'Chai and Mocha');
+          assert.equal(res.body.status_text, 'In QA');
+          assert.isBoolean(res.body.open);
+          assert.equal(res.body.open, true);
           done();
         });
+        
       });
       
       test('Required fields filled in', function(done) {
@@ -57,9 +62,24 @@ suite('Functional Tests', function() {
             created_by: "Functional Test: Required fields filled in"
           })
           .end(function(err, res) {
-            assert.equal(res.body.issue_title, "Title");
-            assert.equal(res.body.issue_text, "text");
-            assert.equal(res.body.created_by, "Functional Test: Required fields filled in");
+            assert.equal(res.status, 200);
+            assert.property(res.body, 'issue_title');
+            assert.property(res.body, 'issue_text');
+            assert.property(res.body, 'created_on');
+            assert.property(res.body, 'updated_on');
+            assert.property(res.body, 'created_by');
+            assert.property(res.body, 'assigned_to');
+            assert.property(res.body, 'open');
+            assert.property(res.body, 'status_text');
+            assert.property(res.body, '_id');
+            _id2 = res.body._id;
+            assert.equal(res.body.issue_title, 'Title');
+            assert.equal(res.body.issue_text, 'text');
+            assert.equal(res.body.created_by, 'Functional Test: Required fields filled in');
+            assert.equal(res.body.assigned_to, '');
+            assert.equal(res.body.status_text, '');
+            assert.isBoolean(res.body.open);
+            assert.equal(res.body.open, true);
             done();
           })
       });
@@ -87,7 +107,7 @@ suite('Functional Tests', function() {
           .send({_id: id})
           .end((err, res) => {
             assert.equal(res.status, 200);
-            assert.notEqual(res.text, "no updated field sent");
+            assert.equal(res.text, "no updated field sent");
           
             done();
           })
@@ -99,7 +119,7 @@ suite('Functional Tests', function() {
         .send({_id: id, issue_text: 'updated issue text test'})
         .end(function(err, res){
           assert.equal(res.status, 200);
-          assert.notEqual(res.text, 'successfully updated');
+          assert.equal(res.text, 'successfully updated');
           done();
         });  
       });
@@ -107,10 +127,10 @@ suite('Functional Tests', function() {
       test('Multiple fields to update', function(done) {
         chai.request(server)
         .put('/api/issues/test')
-        .send({_id: id, issue_text: 'updated issue text test for the second issue', open: 'false'})
+        .send({_id: id, issue_text: 'updated issue text test for the second issue', open: false})
         .end(function(err, res){
           assert.equal(res.status, 200);
-          assert.notEqual(res.text, 'successfully updated');
+          assert.equal(res.text, 'successfully updated');
           done();
         });  
       });
@@ -145,7 +165,6 @@ suite('Functional Tests', function() {
         .query({assigned_to: 'Chai and Mocha'})
         .end(function(err, res){
           assert.equal(res.status, 200);
-          assert.isArray(res.body);
           assert.property(res.body[0], 'issue_title');
           assert.property(res.body[0], 'issue_text');
           assert.property(res.body[0], 'created_on');
@@ -163,11 +182,19 @@ suite('Functional Tests', function() {
       test('Multiple filters (test for multiple fields you know will be in the db for a return)', function(done) {
         chai.request(server)
         .get('/api/issues/test')
-        .query({open: false})
+        .query({open: false, issue_title: "title"})
         .end(function(err, res){
           assert.equal(res.status, 200);
-          assert.notEqual(res.body[0].open, false);
-          assert.equal(res.body[0].issue_title, 'Title');
+          assert.property(res.body[0], 'issue_title');
+          assert.property(res.body[0], 'issue_text');
+          assert.property(res.body[0], 'created_on');
+          assert.property(res.body[0], 'updated_on');
+          assert.property(res.body[0], 'created_by');
+          assert.property(res.body[0], 'assigned_to');
+          assert.property(res.body[0], 'open');
+          assert.property(res.body[0], 'status_text');
+          assert.property(res.body[0], '_id');
+          assert.notEqual(res.body.open, false);
           done();
         });
       });
@@ -194,7 +221,7 @@ suite('Functional Tests', function() {
         .send({_id: _id2})
         .end(function(err, res){
           assert.equal(res.status, 200);
-          assert.notEqual(res.text, 'deleted '+ _id2);
+          assert.equal(res.text, 'deleted '+ _id2);
           done();
         });  
       });

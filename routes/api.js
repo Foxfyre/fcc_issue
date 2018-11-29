@@ -26,30 +26,25 @@ MongoClient.connect(CONNECTION_STRING, (err, db) => {
       .get(function (req, res){
         const project = req.params.project;
         const query = req.query;
+        //console.log(query);
       
-        query.project = project;
+        if (query._id) { query._id = new ObjectId(query._id) };
+        if (query.open) { query.open = String(query.open) == "true" };
       
-        if (query._id) query._id = new ObjectId(query._id);
-        if (query.open) query.open = Boolean(query.open);
-      
-        
         MongoClient.connect(process.env.DATABASE, (err, db) => {
-          const collection = db.collection("issues");
+          const collection = db.collection(project);
           
-          collection.find(query).toArray((err, result) => {
+          collection.find(query._id).toArray((err, result) => {
             res.json(result);
           })
-          
         })
-      
-      
       })
             //app.route('/api/issues/:project')
       .post((req, res) => {
         const project = req.params.project;
 
         MongoClient.connect(process.env.DATABASE, (err, db) => {
-          const collection = db.collection("issues");
+          const collection = db.collection(project);
 
           let assigned_to = "";
           let status_text = "";
@@ -78,50 +73,38 @@ MongoClient.connect(CONNECTION_STRING, (err, db) => {
         })
         .put(function (req, res){
           const project = req.params.project;
-          let modified = {};
-          let noChange = true;
+          let issue = req.body._id;
+          delete req.body._id;
+          let modified = req.body;
 
-          const open = Boolean(req.body.open);
-
-          for (let i in req.body) {
-            if (req.body[i] !== "" && i !== "_id") {
-              noChange = false;
-              modified[i] = req.body[i]
-            }
-          }
-
-          noChange ? console.log("no updates") : modified.updated_on = new Date();
-
-          MongoClient.connect(process.env.DATABASE, (err, db) => {
-            const collection = db.collection("issues");
-
-            collection.updateOne({_id: ObjectId(req.body._id)}, {$set: modified}, (err, data) => {
-              err ? res.send("Error: update failed") : res.send("Update Successful");
+          for (let i in modified) { if (!modified[i]) { delete modified[i] } }
+          if (req.body.open) { req.body.open = String(req.body.open) == "true" }; 
+          if (Object.keys(modified).length === 0) {
+            res.send("no updated field sent");
+          } else {
+            modified.updated_on = new Date();
+            MongoClient.connect(process.env.DATABASE, (err, db) => {
+              const collection = db.collection(project);
+              collection.updateOne({_id: new ObjectId(issue)}, {$set: modified},{new: true}, (err, data) => {
+                (!err) ? res.send("successfully updated") : res.send("could not update " + issue + " " + err);
+              })
             })
-          })
+          }
         })
         .delete(function (req, res){
           const project = req.params.project;
-          console.log(project);
+          let issue = req.body._id;
+          if (!issue) {
+            res.send("_id error"); 
+          } else {
           MongoClient.connect(process.env.DATABASE, (err, db) => {
-            const collection = db.collection("issues");
-
-            if (!req.body._id || req.body._id.length !== 24) {
-              res.send("_id error");
-            } else {
-              collection.findOneAndDelete({project: project, _id: ObjectId(req.body._id)}, (err, data) => {
-                if (err) {
-                  res.send("Delete failed"); 
-                } else if (data.value !== null) {
-                  res.send("Deleted"); 
-                } else {
-                  res.send(req.body._id + " not found");
-                }
+            const collection = db.collection(project);
+              collection.findOneAndDelete({project: project, _id: new ObjectId(req.body._id)}, (err, data) => {
+                (!err) ? res.send("deleted " + req.body._id) : res.send("could not delete " + req.body._id + " " + err); 
+              })
               });
             }
           });
-        });
-
     };
 
   
